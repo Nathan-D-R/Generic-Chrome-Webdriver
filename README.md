@@ -20,8 +20,10 @@ pip install -r requirements.txt
 
 ### 2. Setup Credentials
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root for the following features:
 
+
+Microsoft Login:
 ```env
 microsoft_username="your-email@example.com"
 microsoft_password="your-password"
@@ -40,11 +42,11 @@ Open `Driver.ipynb` and run the cells to:
 Generic Chrome Webdriver/
 ├── Driver.ipynb              # Main notebook with examples
 ├── requirements.txt          # Python dependencies
-├── .env                      # Credentials (create this)
+├── .env                      # Credentials (copy .env.example to make this)
 ├── Utilities/
 │   ├── microsoft_login.py    # Microsoft authentication helper
 │   └── __init__.py
-└── Outputs/
+└── Outputs/                  # General Output Directory (Ignored by .gitignore)
     └── Downloads/            # Default download location
 ```
 
