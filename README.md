@@ -5,6 +5,9 @@ A reusable Selenium Chrome WebDriver setup with common utilities for web automat
 ## Features
 
 - **Pre-configured Chrome driver** with stability options
+- **Stealth mode** for anti-bot detection (optional)
+- **User agent factory** with rotation and platform-specific generation
+- **Human-like interactions** with randomized timing and movements
 - **Microsoft login automation** with account picker support
 - **Custom download directory** management
 - **Chrome profile support** for persistent sessions
@@ -72,9 +75,47 @@ from Utilities.config import Config
 driver = create_driver(
     headless=Config.HEADLESS,
     profile_dir=Config.get_profile_dir(),
-    download_dir=Config.DOWNLOAD_DIR
+    download_dir=Config.DOWNLOAD_DIR,
+    stealth_mode=Config.STEALTH_MODE  # Anti-detection
 )
 driver.get("https://example.com")
+```
+
+### Stealth Mode + Human-like Interactions
+
+```python
+from Utilities.humanize import human_send_keys, human_click, human_scroll
+
+# Enable stealth mode to avoid detection
+driver = create_driver(stealth_mode=True)
+driver.get("https://example.com")
+
+# Use human-like interactions
+search_box = driver.find_element(By.ID, "search")
+human_send_keys(search_box, "search query")
+human_click(driver, search_box)
+human_scroll(driver, "down", 300)
+```
+
+See [STEALTH.md](STEALTH.md) for detailed anti-detection documentation.  
+See [HUMANIZE.md](HUMANIZE.md) for human-like interaction patterns.  
+See [USER_AGENT.md](USER_AGENT.md) for user agent generation and rotation.
+
+### User Agent Rotation
+
+```python
+from Utilities.user_agent import UserAgentRotator, generate_user_agent
+
+# Generate single user agent
+ua = generate_user_agent("windows")
+driver = create_driver(stealth_mode=True, user_agent=ua)
+
+# Use rotator for multiple sessions
+rotator = UserAgentRotator(platforms=["windows", "mac"], pool_size=10)
+for i in range(5):
+    ua = rotator.get_next()
+    driver = create_driver(stealth_mode=True, user_agent=ua)
+    # Each session appears as different browser
 ```
 
 ### Microsoft Login

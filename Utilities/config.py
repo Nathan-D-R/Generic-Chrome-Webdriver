@@ -23,6 +23,11 @@ class Config:
     HEADLESS: bool = os.getenv("HEADLESS", "false").lower() == "true"
     IMPLICIT_WAIT: int = int(os.getenv("IMPLICIT_WAIT", "10"))
     WINDOW_SIZE: str = os.getenv("WINDOW_SIZE", "1920x1080")
+    STEALTH_MODE: bool = os.getenv("STEALTH_MODE", "false").lower() == "true"
+    
+    # User Agent Settings
+    USER_AGENT: Optional[str] = os.getenv("USER_AGENT", None)
+    USER_AGENT_PLATFORM: Optional[str] = os.getenv("USER_AGENT_PLATFORM", "random")
     
     # Directory Settings
     DOWNLOAD_DIR: str = os.getenv("DOWNLOAD_DIR", os.path.abspath("./Outputs/Downloads"))
@@ -77,6 +82,9 @@ def print_config():
     print("CONFIGURATION")
     print("=" * 50)
     print(f"Headless: {Config.HEADLESS}")
+    print(f"Stealth Mode: {Config.STEALTH_MODE}")
+    print(f"User Agent: {Config.USER_AGENT or 'Auto-generated'}")
+    print(f"User Agent Platform: {Config.USER_AGENT_PLATFORM}")
     print(f"Implicit Wait: {Config.IMPLICIT_WAIT}s")
     print(f"Window Size: {Config.WINDOW_SIZE}")
     print(f"Download Dir: {Config.DOWNLOAD_DIR}")
