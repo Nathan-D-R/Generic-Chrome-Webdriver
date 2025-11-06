@@ -87,6 +87,9 @@ def microsoft_login(
     logger.info(f"Starting Microsoft login for user: {username}")
     
     try:
+        # Step 0: Handle account picker if it appears
+        _handle_account_picker(driver, username, timeout)
+        
         # Step 1: Enter username and click "Next"
         if not _enter_username(driver, username, timeout):
             return False
@@ -104,6 +107,79 @@ def microsoft_login(
     except Exception as e:
         logger.error(f"Microsoft login failed: {str(e)}")
         raise MicrosoftLoginError(f"Login failed: {str(e)}") from e
+
+
+def _handle_account_picker(driver: WebDriver, username: str, timeout: int) -> bool:
+    """
+    Step 0: Handle the "Pick an account" page if it appears.
+    
+    This page shows a list of previously used accounts and a "Use another account" option.
+    If the desired username is in the list, click it. Otherwise, click "Use another account".
+    
+    Args:
+        driver: Selenium WebDriver instance
+        username: Microsoft account username/email to look for
+        timeout: Maximum wait time in seconds
+        
+    Returns:
+        bool: True if handled successfully or page not present
+    """
+    try:
+        logger.info("Step 0: Checking for account picker page")
+        
+        # Use a shorter timeout since this page may not appear
+        short_timeout = min(timeout, 5)
+        
+        # Check if we're on the account picker page by looking for the tilesHolder div
+        try:
+            tiles_holder = WebDriverWait(driver, short_timeout).until(
+                EC.presence_of_element_located((By.ID, "tilesHolder"))
+            )
+            logger.info("Account picker page detected")
+            
+            # Normalize the username for comparison (remove quotes, lowercase)
+            normalized_username = username.strip('"').strip("'").lower()
+            
+            # Try to find a tile matching the username
+            # Tiles have data-test-id attribute with the email
+            try:
+                account_tile = driver.find_element(
+                    By.CSS_SELECTOR, 
+                    f'[data-test-id="{normalized_username}"]'
+                )
+                logger.info(f"Found matching account tile for: {username}")
+                account_tile.click()
+                logger.info("Clicked on existing account")
+                time.sleep(1)
+                return True
+                
+            except NoSuchElementException:
+                logger.info(f"Account {username} not found in picker, looking for 'Use another account'")
+                
+                # Click "Use another account" button
+                # This button is in a div with id="otherTile"
+                try:
+                    other_account_button = WebDriverWait(driver, short_timeout).until(
+                        EC.element_to_be_clickable((By.ID, "otherTile"))
+                    )
+                    other_account_button.click()
+                    logger.info("Clicked 'Use another account'")
+                    time.sleep(1)
+                    return True
+                    
+                except TimeoutException:
+                    logger.warning("Could not find 'Use another account' button")
+                    return False
+            
+        except TimeoutException:
+            # Account picker page didn't appear - this is normal
+            logger.info("Account picker page not detected (proceeding to username entry)")
+            return True
+        
+    except Exception as e:
+        logger.warning(f"Error handling account picker: {str(e)}")
+        # Don't fail the entire login for this step
+        return True
 
 
 def _enter_username(driver: WebDriver, username: str, timeout: int) -> bool:
