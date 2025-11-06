@@ -20,13 +20,14 @@ import os
 import logging
 import time
 from typing import Optional
-from dotenv import load_dotenv
 
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+
+from Utilities.config import Config
 
 
 # Configure logger
@@ -68,19 +69,18 @@ def microsoft_login(
         >>> microsoft_login(driver)  # Uses credentials from .env
         True
     """
-    # Load credentials from environment if not provided
+    # Load credentials from Config if not provided
     if username is None or password is None:
-        load_dotenv()
-        username = username or os.getenv("microsoft_username")
-        password = password or os.getenv("microsoft_password")
+        username = username or Config.MICROSOFT_USERNAME
+        password = password or Config.MICROSOFT_PASSWORD
         
         if not username or not password:
             raise MicrosoftLoginError(
                 "Username and password must be provided or set in .env file "
-                "(microsoft_username and microsoft_password)"
+                "(MICROSOFT_USERNAME and MICROSOFT_PASSWORD)"
             )
     
-    # Remove quotes if present in env variables
+    # Remove quotes if present
     username = username.strip('"').strip("'")
     password = password.strip('"').strip("'")
     

@@ -18,16 +18,22 @@ A reusable Selenium Chrome WebDriver setup with common utilities for web automat
 pip install -r requirements.txt
 ```
 
-### 2. Setup Credentials
+### 2. Setup Configuration
 
-Create a `.env` file in the project root for the following features:
+Copy the example environment file and customize it:
 
-
-Microsoft Login:
-```env
-microsoft_username="your-email@example.com"
-microsoft_password="your-password"
+```bash
+copy .env.example .env  # Windows
+# or
+cp .env.example .env    # Mac/Linux
 ```
+
+Edit `.env` with your settings:
+- Microsoft credentials (required for login automation)
+- Download directories
+- Chrome preferences (headless, window size, etc.)
+- Logging settings
+- Concurrency options
 
 ### 3. Run the Notebook
 
@@ -42,11 +48,15 @@ Open `Driver.ipynb` and run the cells to:
 Generic Chrome Webdriver/
 ├── Driver.ipynb              # Main notebook with examples
 ├── requirements.txt          # Python dependencies
-├── .env                      # Credentials (copy .env.example to make this)
+├── .env.example              # Example configuration file
+├── .env                      # Your configuration (create from .env.example)
 ├── Utilities/
-│   ├── microsoft_login.py    # Microsoft authentication helper
+│   ├── driver_factory.py     # Chrome WebDriver factory
+│   ├── config.py             # Configuration loader
+│   ├── logging_setup.py      # Logging configuration
+│   ├── microsoft_login.py    # Microsoft authentication
 │   └── __init__.py
-└── Outputs/                  # General Output Directory (Ignored by .gitignore)
+└── Outputs/
     └── Downloads/            # Default download location
 ```
 
@@ -55,11 +65,15 @@ Generic Chrome Webdriver/
 ### Basic Driver Setup
 
 ```python
-from selenium import webdriver
-from Driver import create_driver
+from Utilities.driver_factory import create_driver
+from Utilities.config import Config
 
-# Create driver with download directory
-driver = create_driver(download_dir="./Outputs/Downloads")
+# Create driver using settings from .env
+driver = create_driver(
+    headless=Config.HEADLESS,
+    profile_dir=Config.get_profile_dir(),
+    download_dir=Config.DOWNLOAD_DIR
+)
 driver.get("https://example.com")
 ```
 
@@ -67,9 +81,10 @@ driver.get("https://example.com")
 
 ```python
 from Utilities.microsoft_login import microsoft_login
+from Utilities.config import Config
 
-# Auto-login using .env credentials
-microsoft_login(driver, stay_signed_in=False)
+# Auto-login using credentials from .env
+microsoft_login(driver, stay_signed_in=Config.STAY_SIGNED_IN)
 ```
 
 The login utility handles:
@@ -82,39 +97,42 @@ The login utility handles:
 
 ```python
 from concurrent.futures import ThreadPoolExecutor
+from Utilities.driver_factory import create_driver
+from Utilities.config import Config
 
 def worker_task(worker_id):
-    worker_driver = create_driver()
+    worker_driver = create_driver(headless=Config.HEADLESS)
     # Perform tasks...
     worker_driver.quit()
 
-with ThreadPoolExecutor(max_workers=3) as executor:
-    futures = [executor.submit(worker_task, i) for i in range(3)]
+with ThreadPoolExecutor(max_workers=Config.MAX_WORKERS) as executor:
+    futures = [executor.submit(worker_task, i) for i in range(Config.MAX_WORKERS)]
 ```
 
 ## Configuration Options
 
-### Driver Options
+All configuration is managed through the `.env` file. See `.env.example` for all available options.
 
-```python
-driver = create_driver(
-    headless=False,           # Run browser in background
-    profile_dir=None,         # Use custom Chrome profile
-    download_dir=None         # Set download directory
-)
-```
+### Key Settings
 
-### Microsoft Login Options
+**Chrome Driver:**
+- `HEADLESS` - Run browser in background (true/false)
+- `IMPLICIT_WAIT` - Default wait time for elements (seconds)
+- `WINDOW_SIZE` - Browser window size
+- `PROFILE_DIR` - Chrome profile path for persistent sessions
+- `DOWNLOAD_DIR` - Directory for downloaded files
 
-```python
-microsoft_login(
-    driver,
-    username=None,            # Or load from .env
-    password=None,            # Or load from .env
-    stay_signed_in=False,     # Handle "Stay signed in?" prompt
-    timeout=20                # Wait timeout in seconds
-)
-```
+**Microsoft Login:**
+- `MICROSOFT_USERNAME` - Account email
+- `MICROSOFT_PASSWORD` - Account password
+- `STAY_SIGNED_IN` - Handle "Stay signed in?" prompt (true/false)
+
+**Logging:**
+- `LOG_LEVEL` - Logging verbosity (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+- `LOG_FILE` - Log file location
+
+**Concurrency:**
+- `MAX_WORKERS` - Maximum concurrent browser instances
 
 ## Requirements
 
@@ -124,7 +142,9 @@ microsoft_login(
 
 ## Notes
 
+- All configuration is centralized in `.env` for easy management
 - Drivers are automatically managed via `webdriver-manager`
-- Logs are written to `sandbox.log`
-- Chrome profile path is customizable for session persistence
-- All utilities include error handling and logging
+- Logs location is configurable via `LOG_FILE` in `.env`
+- Chrome profile path supports environment variables (e.g., `~/` expands to home directory)
+- All utilities include comprehensive error handling and logging
+- Use `print_config()` to display current configuration and validate settings
