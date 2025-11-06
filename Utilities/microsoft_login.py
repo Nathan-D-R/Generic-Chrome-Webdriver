@@ -88,11 +88,15 @@ def microsoft_login(
     
     try:
         # Step 0: Handle account picker if it appears
-        _handle_account_picker(driver, username, timeout)
+        # Returns True if an account was selected, False if we need to enter username manually
+        account_selected = _handle_account_picker(driver, username, timeout)
         
-        # Step 1: Enter username and click "Next"
-        if not _enter_username(driver, username, timeout):
-            return False
+        # Step 1: Enter username and click "Next" (skip if account was already selected)
+        if not account_selected:
+            if not _enter_username(driver, username, timeout):
+                return False
+        else:
+            logger.info("Skipping username entry (account already selected from picker)")
         
         # Step 2: Enter password and click "Sign in"
         if not _enter_password(driver, password, timeout):
@@ -122,7 +126,8 @@ def _handle_account_picker(driver: WebDriver, username: str, timeout: int) -> bo
         timeout: Maximum wait time in seconds
         
     Returns:
-        bool: True if handled successfully or page not present
+        bool: True if an existing account was selected (skip username entry),
+              False if "Use another account" was clicked or page not present (proceed to username entry)
     """
     try:
         logger.info("Step 0: Checking for account picker page")
@@ -149,9 +154,9 @@ def _handle_account_picker(driver: WebDriver, username: str, timeout: int) -> bo
                 )
                 logger.info(f"Found matching account tile for: {username}")
                 account_tile.click()
-                logger.info("Clicked on existing account")
+                logger.info("Clicked on existing account - skipping username entry")
                 time.sleep(1)
-                return True
+                return True  # Account selected, skip username entry
                 
             except NoSuchElementException:
                 logger.info(f"Account {username} not found in picker, looking for 'Use another account'")
@@ -165,21 +170,21 @@ def _handle_account_picker(driver: WebDriver, username: str, timeout: int) -> bo
                     other_account_button.click()
                     logger.info("Clicked 'Use another account'")
                     time.sleep(1)
-                    return True
+                    return False  # Need to enter username manually
                     
                 except TimeoutException:
                     logger.warning("Could not find 'Use another account' button")
-                    return False
+                    return False  # Proceed with username entry as fallback
             
         except TimeoutException:
             # Account picker page didn't appear - this is normal
             logger.info("Account picker page not detected (proceeding to username entry)")
-            return True
+            return False  # Need to enter username manually
         
     except Exception as e:
         logger.warning(f"Error handling account picker: {str(e)}")
-        # Don't fail the entire login for this step
-        return True
+        # Don't fail the entire login for this step, but proceed with username entry
+        return False
 
 
 def _enter_username(driver: WebDriver, username: str, timeout: int) -> bool:
