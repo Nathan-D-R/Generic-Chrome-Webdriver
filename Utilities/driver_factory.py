@@ -28,7 +28,8 @@ def create_driver(
     window_size: str = "1920x1080",
     stealth_mode: bool = False,
     user_agent: Optional[str] = None,
-    user_agent_platform: Optional[Literal["windows", "mac", "linux", "random"]] = None
+    user_agent_platform: Optional[Literal["windows", "mac", "linux", "random"]] = None,
+    use_opaque_driver: bool = False
 ) -> webdriver.Chrome:
     """
     Create a Chrome WebDriver with pre-configured options.
@@ -42,13 +43,19 @@ def create_driver(
         stealth_mode: Enable anti-detection features (experimental)
         user_agent: Custom user agent string. Auto-generated if None
         user_agent_platform: Platform for user agent generation ("windows", "mac", "linux", "random")
+        use_opaque_driver: Wrap driver in OpaqueDriver for undetectable interactions
         
     Returns:
-        webdriver.Chrome: Configured Chrome WebDriver instance
+        webdriver.Chrome or OpaqueDriver: Configured driver instance
         
     Example:
         >>> driver = create_driver(download_dir="./downloads", stealth_mode=True)
         >>> driver.get("https://example.com")
+        
+        >>> # Use opaque driver for undetectable interactions
+        >>> driver = create_driver(stealth_mode=True, use_opaque_driver=True)
+        >>> element = driver.find_element(By.ID, "search")
+        >>> element.send_keys("query")  # Automatically uses human-like typing
         
     Warning:
         stealth_mode is experimental and may not work on all websites.
@@ -133,6 +140,17 @@ def create_driver(
     
     driver.implicitly_wait(implicit_wait)
     logger.info("Chrome WebDriver created successfully")
+    
+    # Wrap in OpaqueDriver if requested
+    if use_opaque_driver:
+        from Utilities.opaque_driver import create_opaque_driver
+        logger.info("Wrapping driver in OpaqueDriver for undetectable interactions")
+        return create_opaque_driver(
+            driver,
+            use_human_behavior=True,
+            auto_pause=True,
+            pause_range=(0.5, 2.0)
+        )
     
     return driver
 
